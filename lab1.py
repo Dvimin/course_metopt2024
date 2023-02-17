@@ -21,7 +21,9 @@
 
 # ИЩЕМ МИНИМУМ
 
+
 import copy # для создания глубоких копий списков
+
 
 def read_file(filename):
     system = []
@@ -52,6 +54,7 @@ def read_file(filename):
 
 
 def to_canonical(system, sign, goal_func, idx):
+    print('to_canonical: ')
     # копирование данных, чтобы исходные остались прежними
     copy_sign = copy.deepcopy(sign)
     copy_system = copy.deepcopy(system)
@@ -97,33 +100,36 @@ def to_canonical(system, sign, goal_func, idx):
     for j in to_delete:
         copy_goal_func.pop(j)
     copy_idx = [i for i in range(len(copy_system[0]) - 1)]
+    print('system:')
+    for exp in copy_system:
+        print(exp)
+    print('sign: ', copy_sign)
+    print('goal_func: ', copy_goal_func)
+    print('idx: ', copy_idx)
+    print('\n')
     return copy_system, copy_sign, copy_goal_func, copy_idx
 
 
 def direct_to_dual(system, sign, goal_func, idx):
-    copy_system, copy_sign, copy_goal_func, copy_idx = to_canonical(system, sign, goal_func, idx)
-    for exp in system:
-        print(exp)
-    print('sign: ', sign)
-    print('goal_func: ', goal_func)
-    print('idx: ', idx)
-    print(copy_goal_func)
-    for exp in copy_system:
-        print(exp)
-    # ф-я цели
     dual_func = []
-    for exp in copy_system:
-        dual_func.append(exp[-1])
-    # создаем двойственную систему
-    dual_system = [[0] * len(copy_system) for i in range(len(copy_system[0]) - 1)]
-    for i in range(len(copy_system)):
-        for j in range(len(copy_system[0])-1):
-            dual_system[j][i] = copy_system[i][j]
-    dual_sign = []
-    for i in range(len(dual_system)):
-        dual_system[i].append(copy_goal_func[i])
-        dual_sign.append('>=')
     dual_idx = []
+    dual_sign = []
+    for exp in system:
+        dual_func.append(exp[-1])
+
+    # создаем двойственную систему
+    dual_system = list(map(list, zip(*system))) #транспонированная матрица
+    dual_system.pop(-1)
+    for i in range(len(dual_system)):
+        dual_system[i].append(goal_func[i]) # добавляем свободные члены
+        if i in idx: # и смотрим знаки новой системы
+            dual_sign.append('<=')
+        else:
+            dual_sign.append('=')
+        if sign[i] == '>=':
+            dual_idx.append(i)
+        if sign[i] == '<=':
+            dual_idx.append(-i) # если idx отрицательный, значит x[i] <= 0, если idx положит, то x[i] >= 0
     return dual_system, dual_sign, dual_func, dual_idx
 
 
@@ -133,14 +139,14 @@ def direct_to_dual(system, sign, goal_func, idx):
 
 
 
-system, sign, goal_func, idx = read_file("task.txt")
+system, sign, goal_func, idx = read_file("task1.txt")
 for exp in system:
     print(exp)
 print('sign: ', sign)
 print('goal_func: ', goal_func)
 print('idx: ', idx)
 print('\n')
-system, sign, goal_func, idx = direct_to_dual(system, sign, goal_func, idx)
+system, sign, goal_func, idx = to_canonical(system, sign, goal_func, idx)
 print('\n')
 print('system:')
 for exp in system:
