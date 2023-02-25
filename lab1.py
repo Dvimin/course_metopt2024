@@ -13,18 +13,18 @@
 целевую функцию можно как минимизировать, так и максимизировать.
 """
 
+# стандартная форма - ИЩЕМ МИНИМУМ
+
+
+import copy # для создания глубоких копий списков
+from itertools import combinations
+import numpy as np
+
 """
 Чтение файла. Сохраняем систему.
 Предполагается, что в строке, начинающейся с goal_gunc, записана целевая функция.
 В строке, начинающейся с idx, записаны индексы переменных, имеющих ограничение на знак >= 0.
 """
-
-# ИЩЕМ МИНИМУМ
-
-
-import copy # для создания глубоких копий списков
-
-
 def read_file(filename):
     system = []
     sign = []
@@ -100,13 +100,6 @@ def to_canonical(system, sign, goal_func, idx):
     for j in to_delete:
         copy_goal_func.pop(j)
     copy_idx = [i for i in range(len(copy_system[0]) - 1)]
-    print('system:')
-    for exp in copy_system:
-        print(exp)
-    print('sign: ', copy_sign)
-    print('goal_func: ', copy_goal_func)
-    print('idx: ', copy_idx)
-    print('\n')
     return copy_system, copy_sign, copy_goal_func, copy_idx
 
 
@@ -133,6 +126,224 @@ def direct_to_dual(system, sign, goal_func, idx):
     return dual_system, dual_sign, dual_func, dual_idx
 
 
+class SimplexMethod:
+
+    def __init__(self, A, b, c):
+        self.A = A
+        self.b = b
+        self.c = c
+
+    def solve(self):
+        m = len(self.A)
+        n = len(self.A[0])
+
+        c_b = []
+        pos = 0
+
+        for i in range(n):
+            sum = 0
+            basic = True
+            col = get_col(self.A, i)
+            for elem in col:
+                sum += elem
+                if elem > 1 | elem < 0:
+                    basic = False
+            if sum == 1 & basic:
+                c_b[pos] = self.c[i]
+
+        reduced_costs = compute_costs(c_b, self.A, self.c)
+        z = mult_vectors(c_b, self.b)
+
+        tableau = [[]]
+        for i in range(len(reduced_costs)):
+            tableau[0].append(reduced_costs[i])
+        tableau[0].append(z)
+
+        for i in range(m):
+            tableau.append([])
+            for j in range(n):
+                tableau[i+1].append(self.A[i][j])
+            tableau[i+1].append(self.b[i])
+
+        timer = 0
+
+        while timer < 300:
+            optimal = True
+            most_negative_index = 0
+            for i in range(len(tableau[0]) - 1):
+                if tableau[0][i] < 0:
+                    optimal = False
+                    if tableau[0][i] < tableau[0][most_negative_index]:
+                        most_negative_index = i
+            if optimal:
+                optimal_sol = []
+
+                for i in range(n):
+                    col = get_col(tableau, i)
+                    sum = 0
+                    basic = True
+                    for elem in col:
+                        sum += elem
+                        if elem > 1 | elem < 0 | sum > 1:
+                            basic = False
+                    if basic:
+                        b_index = -1
+                        for j in range(len(col)):
+                            if col[j] == 1:
+                                b_index = j
+                        optimal_sol[i] = tableau[b_index][len(tableau[0]) - 1]
+                    else:
+                        optimal_sol[i] = 0
+
+                return 1, optimal_sol, tableau[0][len(tableau[0]) - 1]
+
+            pivot_index = 1
+            min_ratio = 9999999
+            for i in range(1, len(tableau)):
+                if tableau[i][most_negative_index] > 0:
+                    if tableau[i][len(tableau[0]) - 1] / tableau[pivot_index][most_negative_index] < min_ratio:
+                        pivot_index = 1
+                        min_ratio = tableau[i][len(tableau[0]) - 1] / tableau[pivot_index][most_negative_index]
+            if pivot_index == 1 & tableau[pivot_index][most_negative_index] <= 0:
+                return -3
+
+            bland = True
+            if bland:
+                for i in range(len(tableau[0]) - 1):
+                    if tableau[0][i] < 0:
+                        most_negative_index = i
+                        break
+
+            tableau = pivot(tableau, pivot_index, most_negative_index)
+
+            timer += 1
+
+        return 0
+
+
+def pivot(tableau, r, c):
+    if tableau[r][c] != 1:
+        divisor = tableau[r][c]
+        for i in range(len(tableau[r])):
+            tableau[r][c] = tableau[r][i] / divisor
+
+    for i in range(r):
+        if tableau[i][c] != 0:
+            factor = -tableau[i][c]
+            for j in range(len(tableau[0])):
+                tableau[i][j] = tableau[i][j] + factor * tableau[r][j]
+
+    for i in range(r + 1, len(tableau)):
+        if tableau[i][c] != 0:
+            factor = -tableau[i][c]
+            for j in range(len(tableau[0])):
+                tableau[i][j] = tableau[i][j] + factor * tableau[r][j]
+
+    return tableau
+
+
+def get_col(A, inx):
+    n = len(A)
+    col = []
+    for i in range(n):
+        col.append(A[i][inx])
+    return col
+
+
+def mult_vectors(a, b):
+    result = 0
+    for i in range(len(a)):
+        result += a[i] * b[i]
+    return result
+
+
+def compute_costs(c_b, A, objective_vals):
+    n = len(A[0])
+    reduced_costs = []
+    for i in range(n):
+        reduced_costs[i] = mult_vectors(c_b, get_col(A, i)) - objective_vals[i]
+    return reduced_costs
+
+EPS = 0.000000001
+
+def get_basis_matrs(A : np.ndarray):
+    N = A.shape[0]
+    M = A.shape[1]
+
+    basis_matrs = []
+    basis_combinations_indexes = []
+    all_indexes = [i for i in range(M)]
+
+    for i in combinations(all_indexes, N):
+        basis_matr = A[:, i]
+        if np.linalg.det(basis_matr) != 0:
+            basis_matrs.append(basis_matr)
+            basis_combinations_indexes.append(i)
+        #basis_matrs.append(basis_matr)
+        #basis_combinations_indexes.append(i)
+
+    return basis_matrs, basis_combinations_indexes
+
+def get_all_possible_vectors(A : list, b : list):
+    N = len(A[0])
+    M = len(A)
+    vectors = []
+
+    if M >= N:
+        return vectors
+    else:
+        basis_matrs, basis_combinations_indexes = get_basis_matrs(np.array(A))
+
+    for i in range(len(basis_matrs)):
+        solve = np.linalg.solve(basis_matrs[i], b)
+        if (len(solve[solve < -1 * EPS]) != 0) or (len(solve[solve > 1e+15]) != 0):
+            continue
+
+        vec = [0 for i in range(N)]
+        for j in range(len(basis_combinations_indexes[i])):
+            vec[basis_combinations_indexes[i][j]] = solve[j]
+        vectors.append(vec)
+    return vectors
+
+
+def solve_brute_force(A : list, b : list, c : list):
+    vectors = get_all_possible_vectors(A, b)
+    if len(vectors) == 0:
+        return []
+
+    solution = vectors[0]
+    target_min = np.dot(solution, c)
+
+    for vec in vectors:
+        if np.dot(vec, c) < target_min:
+            target_min = np.dot(vec, c)
+            solution = vec
+
+    return solution
+
+def getAb(system):
+    A=[]
+    b=[]
+    for exp in system:
+        b.append(exp[-1])
+        A.append(exp[:-1])
+    return A,b
+
+def print_system(system, sign, goal_func, idx):
+    A, b = getAb(system)
+    print('A:')
+    for exp in A:
+        print(exp)
+
+    print('b:')
+    for exp in b:
+        print(exp, end=' ')
+    print('\n')
+    print('sign: ', sign)
+    print('goal_func: ', goal_func)
+    print('idx: ', idx)
+    print('\n')
+
 
 
 
@@ -140,21 +351,18 @@ def direct_to_dual(system, sign, goal_func, idx):
 
 
 system, sign, goal_func, idx = read_file("task1.txt")
-for exp in system:
-    print(exp)
-print('sign: ', sign)
-print('goal_func: ', goal_func)
-print('idx: ', idx)
-print('\n')
+print('---ИСХОДНАЯ ЗАДАЧА---')
+print_system(system, sign, goal_func, idx)
+print('---КАНОНИЧЕСКАЯ ФОРМА---')
 system, sign, goal_func, idx = to_canonical(system, sign, goal_func, idx)
-print('\n')
-print('system:')
-for exp in system:
-    print(exp)
-print('sign: ', sign)
-print('goal_func: ', goal_func)
-print('idx: ', idx)
-print('\n')
+print_system(system, sign, goal_func, idx)
+print('---РЕШЕНИЕ МЕТОДОМ ПЕРЕБОРА ОПОРНЫХ ВЕКТОРОВ---')
+A, b = getAb(system)
+solution = solve_brute_force(A, b, goal_func)
+print(solution)
+print('---РЕШЕНИЕ СИМПЛЕКС-МЕТОДОМ---')
+smplx = SimplexMethod(A, b, goal_func)
+print(smplx.solve())
 
 
 
