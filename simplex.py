@@ -24,8 +24,19 @@ def can_be_improved(tableau):
 
 def get_pivot_position(tableau):
 
+    # Если значение целевой функции можно улучшить, мы ищем точку разворота.
     z = tableau[-1]
-    column = next(i for i, x in enumerate(z[:-1]) if x > 0)
+    column = 0
+    # Bland's rule
+    # find first (smallest index) negative reduced cost rather than most negative
+    bland = True
+    if bland:
+        for i in range(len(z) - 1):
+            if z[i] > 0:
+                column = i
+                break
+    else:
+        column = next(i for i, x in enumerate(z[:-1]) if x > 0)
 
     restrictions = []
 
