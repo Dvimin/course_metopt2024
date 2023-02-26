@@ -27,8 +27,8 @@ def get_pivot_position(tableau):
     # Если значение целевой функции можно улучшить, мы ищем точку разворота.
     z = tableau[-1]
     column = 0
-    # Bland's rule
-    # find first (smallest index) negative reduced cost rather than most negative
+    # Правило Бленда
+    # Найдем улучшающую переменную с наименьшим индексом, выберем этот индекс
     bland = True
     if bland:
         for i in range(len(z) - 1):
