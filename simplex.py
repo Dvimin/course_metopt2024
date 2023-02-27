@@ -23,12 +23,11 @@ def can_be_improved(tableau):
     return any(x > 0 for x in z[:-1])
 
 def get_pivot_position(tableau):
-
     # Если значение целевой функции можно улучшить, мы ищем точку разворота.
     z = tableau[-1]
     column = 0
-    # Правило Бленда
-    # Найдем улучшающую переменную с наименьшим индексом, выберем этот индекс
+    # Bland's rule
+    # find first (smallest index) negative reduced cost rather than most negative
     bland = True
     if bland:
         for i in range(len(z) - 1):
@@ -40,15 +39,17 @@ def get_pivot_position(tableau):
 
     restrictions = []
 
-    # Если значение целевой функции можно улучшить, мы ищем точку разворота.
+    # выбираем все элементы из столбца с индексом поворота
+    #
     for eq in tableau[:-1]:
         el = eq[column]
         restrictions.append(math.inf if el <= 0 else eq[-1] / el)
 
+
+
     # Если нет - задача неограничена
     if (all([r == math.inf for r in restrictions])):
         raise Exception("Linear program is unbounded.")
-
     row = restrictions.index(min(restrictions))
     return row, column
 
@@ -65,7 +66,6 @@ def pivot_step(tableau, pivot_position):
         if eq_i != i:
             multiplier = np.array(new_tableau[i]) * tableau[eq_i][j]
             new_tableau[eq_i] = np.array(tableau[eq_i]) - multiplier
-
     return new_tableau
 
 
