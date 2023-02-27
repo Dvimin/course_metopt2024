@@ -109,7 +109,9 @@ def direct_to_dual(system, sign, goal_func, idx):
             dual_idx.append(-i) # если idx отрицательный, значит x[i] <= 0, если idx положит, то x[i] >= 0
     return dual_system, dual_sign, dual_func, dual_idx
 
+
 EPS = 0.000000001
+
 
 def get_basis_matrs(A : np.ndarray):
     N = A.shape[0]
@@ -128,6 +130,7 @@ def get_basis_matrs(A : np.ndarray):
         #basis_combinations_indexes.append(i)
 
     return basis_matrs, basis_combinations_indexes
+
 
 def get_all_possible_vectors(A : list, b : list):
     N = len(A[0])
@@ -166,6 +169,7 @@ def solve_brute_force(A : list, b : list, c : list):
 
     return solution
 
+
 def getAb(system):
     A=[]
     b=[]
@@ -173,6 +177,7 @@ def getAb(system):
         b.append(exp[-1])
         A.append(exp[:-1])
     return A,b
+
 
 def print_system(system, sign, goal_func, idx):
     A, b = getAb(system)
@@ -190,9 +195,6 @@ def print_system(system, sign, goal_func, idx):
     print('\n')
 
 
-
-
-
 system, sign, goal_func, idx = read_file("task1.txt")
 print('---ИСХОДНАЯ ЗАДАЧА---')
 print_system(system, sign, goal_func, idx)
@@ -206,7 +208,6 @@ print(solution)
 print('---РЕШЕНИЕ СИМПЛЕКС-МЕТОДОМ---')
 solution = simplex(goal_func, A, b)
 print(solution)
-
 
 # res = linprog(method='simplex', A_eq=A, b_eq=b, c=c)
 # print(res)
