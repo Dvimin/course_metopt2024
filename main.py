@@ -1,7 +1,7 @@
 import copy # для создания глубоких копий списков
 import numpy as np
-from scipy.optimize import linprog # для проверки решения
-from itertools import combinations
+from itertools import combinations # возвращает итератор со всеми возможными комбинациями элементов входной последовательности iterable.
+                                   # Каждая комбинация заключена в кортеж с длинной r элементов, в которой нет повторяющихся элементов.
 from simplex import simplex
 
 """
@@ -88,6 +88,8 @@ def to_canonical(system, sign, goal_func, idx):
 
 
 def direct_to_dual(system, sign, goal_func, idx):
+    print(len(system))
+    print(len(sign))
     dual_func = []
     dual_idx = []
     dual_sign = []
@@ -97,6 +99,7 @@ def direct_to_dual(system, sign, goal_func, idx):
     # создаем двойственную систему
     dual_system = list(map(list, zip(*system))) #транспонированная матрица
     dual_system.pop(-1)
+    print(len(dual_system))
     for i in range(len(dual_system)):
         dual_system[i].append(goal_func[i]) # добавляем свободные члены
         if i in idx: # и смотрим знаки новой системы
@@ -123,8 +126,8 @@ def get_basis_matrs(A : np.ndarray):
 
     for i in combinations(all_indexes, N):
         basis_matr = A[:, i]
-        if np.linalg.det(basis_matr) != 0:
-            basis_matrs.append(basis_matr)
+        if np.linalg.det(basis_matr) != 0: # проверяем, что определитель отличен от нуля
+            basis_matrs.append(basis_matr) # получаем все такие матрицы и их индексы
             basis_combinations_indexes.append(i)
         #basis_matrs.append(basis_matr)
         #basis_combinations_indexes.append(i)
@@ -137,17 +140,17 @@ def get_all_possible_vectors(A : list, b : list):
     M = len(A)
     vectors = []
 
-    if M >= N:
+    if M >= N: # Рассматривается матрица A[M,N}, где число строк меньше числа столбцов (M < N)
         return vectors
     else:
         basis_matrs, basis_combinations_indexes = get_basis_matrs(np.array(A))
 
-    for i in range(len(basis_matrs)):
-        solve = np.linalg.solve(basis_matrs[i], b)
+    for i in range(len(basis_matrs)): # Для всех матриц с ненулевым определителем
+        solve = np.linalg.solve(basis_matrs[i], b) # Решаем систему вида A[M,N_k]*x[N]=b[M]
         if (len(solve[solve < -1 * EPS]) != 0) or (len(solve[solve > 1e+15]) != 0):
             continue
 
-        vec = [0 for i in range(N)]
+        vec = [0 for i in range(N)] # Дополняем нулями до N
         for j in range(len(basis_combinations_indexes[i])):
             vec[basis_combinations_indexes[i][j]] = solve[j]
         vectors.append(vec)
@@ -155,21 +158,21 @@ def get_all_possible_vectors(A : list, b : list):
 
 
 def solve_brute_force(A : list, b : list, c : list):
-    vectors = get_all_possible_vectors(A, b)
-    if len(vectors) == 0:
+    vectors = get_all_possible_vectors(A, b) # получаем все возможные опорные вектора
+    if len(vectors) == 0: # если их нет, нет оптимального решения
         return []
 
     solution = vectors[0]
     target_min = np.dot(solution, c)
 
     for vec in vectors:
-        if np.dot(vec, c) < target_min:
-            target_min = np.dot(vec, c)
+        if np.dot(vec, c) < target_min: # находим минимум
+            target_min = np.dot(vec, c) # значение функции цели в крайней точке
             solution = vec
 
     return solution
 
-
+""" Вспомогательная ф-я для получения отдельной матрицы A и вектора b из system """
 def getAb(system):
     A=[]
     b=[]
@@ -182,16 +185,14 @@ def getAb(system):
 def print_system(system, sign, goal_func, idx):
     A, b = getAb(system)
     print('A:')
-    for exp in A:
-        print(exp)
-
-    print('b:')
-    for exp in b:
-        print(exp, end=' ')
-    print('\n')
-    print('sign: ', sign)
-    print('goal_func: ', goal_func)
-    print('idx: ', idx)
+    for i in range(len(A)):
+        for j in range(len(A[i])):
+            print(A[i][j], '*x[',j, ']', end='', sep='')
+            if j != len(A[i]) - 1:
+                print(' + ', end='')
+        print(' ', sign[i], b[i], sep=' ')
+    print('Целевая функция: ', goal_func)
+    print('Индексы переменных с ограничением на знак: ', idx)
     print('\n')
 
 
@@ -207,6 +208,21 @@ solution = solve_brute_force(A, b, goal_func)
 print(solution)
 print('---РЕШЕНИЕ СИМПЛЕКС-МЕТОДОМ---')
 solution = simplex(goal_func, A, b)
+print(solution)
+
+system, sign, goal_func, idx = read_file("task1.txt")
+print('---ДВОЙСТВЕННАЯ ЗАДАЧА---')
+system1, sign1, goal_func1, idx1 = direct_to_dual(system, sign, goal_func, idx)
+print_system(system1, sign1, goal_func1, idx1)
+print('---КАНОНИЧЕСКАЯ ФОРМА---')
+system1, sign1, goal_func1, idx1 = to_canonical(system1, sign1, goal_func1, idx1)
+print_system(system1, sign1, goal_func1, idx1)
+print('---РЕШЕНИЕ МЕТОДОМ ПЕРЕБОРА ОПОРНЫХ ВЕКТОРОВ---')
+A, b = getAb(system1)
+solution = solve_brute_force(A, b, goal_func1)
+print(solution)
+print('---РЕШЕНИЕ СИМПЛЕКС-МЕТОДОМ---')
+solution = simplex(goal_func1, A, b)
 print(solution)
 
 # res = linprog(method='simplex', A_eq=A, b_eq=b, c=c)
