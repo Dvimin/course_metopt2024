@@ -198,6 +198,10 @@ def print_system(system, sign, goal_func, idx):
 system, sign, goal_func, idx = read_file("task1.txt")
 print('---ИСХОДНАЯ ЗАДАЧА---')
 print_system(system, sign, goal_func, idx)
+
+#system, sign, goal_func, idx = direct_to_dual(system, sign, goal_func, idx)
+
+
 print('---КАНОНИЧЕСКАЯ ФОРМА---')
 system, sign, goal_func, idx = to_canonical(system, sign, goal_func, idx)
 print_system(system, sign, goal_func, idx)
@@ -209,5 +213,5 @@ print('---РЕШЕНИЕ СИМПЛЕКС-МЕТОДОМ---')
 solution = simplex(goal_func, A, b)
 print(solution)
 
-# res = linprog(method='simplex', A_eq=A, b_eq=b, c=c)
-# print(res)
+#res = linprog(method='simplex', A_eq=A, b_eq=b, c=c)
+#print(res)
