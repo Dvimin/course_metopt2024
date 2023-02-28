@@ -21,6 +21,8 @@ def make_tableau(A, b, c):
 def can_optimized(tableau):
     # Проверяем, где можно увеличить неосновные значения, не уменьшая значение целевой функции.
     z = tableau[-1]
+    print("Вектор целевой функции, ищем положительные коэффициенты")
+    print(np.array(z[:-1]))
     return any(x > 0 for x in z[:-1])
 
 def get_pivot_position(tableau):
@@ -96,14 +98,27 @@ def get_solution(tableau):
 
 
 def simplex(c, A, b):
+    np.set_printoptions(precision=2, suppress=True)
+
+    iter = 0
     # построим таблицу исмплекс метода
     tableau = make_tableau(A, b, c)
+    print("Инициализация таблицы:")
+    print(np.array(tableau))
 
     # пока можем улучшать целевую функцию - делаем поворот
     while can_optimized(tableau):
+        iter +=1
         # найдем ведущий элемент(индекс ведущего столбца и индекс ведущей строки)
         pivot_position = get_pivot_position(tableau)
+        print("Индексы ведущего элемента")
+        print(pivot_position)
+        # выполним поворот
         # вычисление нового базисного решения через метод Жордана-Гаусса
         tableau = pivot_step(tableau, pivot_position)
+        print("Таблица после замены базиса")
+        print(np.array(tableau))
 
+    print("Число итераций:")
+    print(iter)
     return get_solution(tableau)
