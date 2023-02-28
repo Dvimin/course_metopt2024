@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-def to_tableau(c, A, b):
+def make_tableau(A, b, c):
     # Преобразование в таблицу симплекс метода:
     # __________________
     # |             |   |
@@ -13,11 +13,12 @@ def to_tableau(c, A, b):
     for i in range(len(c)):
         c[i] = -1 * c[i]
 
-    xb = [eq + [x] for eq, x in zip(A, b)]
+    xbasic = [equality + [x] for equality, x in zip(A, b)]
+    # построение нижней строки таблицы
     z = c + [0]
-    return xb + [z]
+    return xbasic + [z]
 
-def can_be_improved(tableau):
+def can_optimized(tableau):
     # Проверяем, где можно увеличить неосновные значения, не уменьшая значение целевой функции.
     z = tableau[-1]
     return any(x > 0 for x in z[:-1])
@@ -26,46 +27,52 @@ def get_pivot_position(tableau):
     # Если значение целевой функции можно улучшить, мы ищем точку разворота.
     z = tableau[-1]
     column = 0
-    # Bland's rule
-    # find first (smallest index) negative reduced cost rather than most negative
+    # Правило Блэнда
+    # найдем индекс первого положительного элемента
     bland = True
     if bland:
         for i in range(len(z) - 1):
             if z[i] > 0:
+                # это будет индекс ведущего столбца
                 column = i
                 break
-    else:
-        column = next(i for i, x in enumerate(z[:-1]) if x > 0)
 
     restrictions = []
 
     # выбираем все элементы из столбца с индексом поворота
-    #
-    for eq in tableau[:-1]:
-        el = eq[column]
-        restrictions.append(math.inf if el <= 0 else eq[-1] / el)
+    # и почленно делим вектор свободных членов b на ведущий столбце
+    for equality in tableau[:-1]:
+        elem = equality[column]
+        restrictions.append(math.inf if elem <= 0 else equality[-1] / elem)
 
 
 
-    # Если нет - задача неограничена
+    # Если все элементы ведущего столбца нули - задача неограничена
     if (all([r == math.inf for r in restrictions])):
         raise Exception("Linear program is unbounded.")
+    # из полученного вектора извлекаем наименьший элемент
+    # это будет индекс ведущей строки
     row = restrictions.index(min(restrictions))
     return row, column
 
 
 def pivot_step(tableau, pivot_position):
+    # зададим новую таблицу
     new_tableau = [[] for eq in tableau]
 
+    # запишем индексы ведущего элемента
     i, j = pivot_position
+    # запишем значение ведущего элемента
     pivot_value = tableau[i][j]
+    # вычислим новую ведущую строку
     new_tableau[i] = np.array(tableau[i]) / pivot_value
 
     # делаем поворотный шаг и возвращаем новую таблицу
-    for eq_i, eq in enumerate(tableau):
-        if eq_i != i:
-            multiplier = np.array(new_tableau[i]) * tableau[eq_i][j]
-            new_tableau[eq_i] = np.array(tableau[eq_i]) - multiplier
+    for equality_i, equality in enumerate(tableau):
+        # по методу Жордана-Гаусса изменяем все строки в таблице, кроме ведущей
+        if equality_i != i:
+            multiplier = np.array(new_tableau[i]) * tableau[equality_i][j]
+            new_tableau[equality_i] = np.array(tableau[equality_i]) - multiplier
     return new_tableau
 
 
@@ -74,7 +81,8 @@ def is_basic(column):
 
 
 def get_solution(tableau):
-    # извлекаем решение из таблицы
+    # извлекаем вектор решения из таблицы
+    # а именно последнюю строку
     columns = np.array(tableau).T
     solutions = []
     for column in columns[:-1]:
@@ -88,11 +96,14 @@ def get_solution(tableau):
 
 
 def simplex(c, A, b):
-    tableau = to_tableau(c, A, b)
+    # построим таблицу исмплекс метода
+    tableau = make_tableau(A, b, c)
 
     # пока можем улучшать целевую функцию - делаем поворот
-    while can_be_improved(tableau):
+    while can_optimized(tableau):
+        # найдем ведущий элемент(индекс ведущего столбца и индекс ведущей строки)
         pivot_position = get_pivot_position(tableau)
+        # вычисление нового базисного решения через метод Жордана-Гаусса
         tableau = pivot_step(tableau, pivot_position)
 
     return get_solution(tableau)
