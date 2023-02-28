@@ -123,10 +123,10 @@ def get_basis_matrs(A : np.ndarray):
     for i in combinations(all_indexes, N):
         basis_matr = A[:, i]
         if np.linalg.det(basis_matr) != 0: # проверяем, что определитель отличен от нуля
-            basis_matrs.append(basis_matr) # получаем все такие матрицы и их индексы
+            basis_matrs.append(basis_matr) # получаем все такие матрицы и индексы комбинаций записываем
             basis_combinations_indexes.append(i)
-        #basis_matrs.append(basis_matr)
-        #basis_combinations_indexes.append(i)
+
+    print("Количество базисных матриц: ", len(basis_matrs))
 
     return basis_matrs, basis_combinations_indexes
 
@@ -165,6 +165,7 @@ def solve_brute_force(A : list, b : list, c : list):
         if np.dot(vec, c) < target_min: # находим минимум
             target_min = np.dot(vec, c) # значение функции цели в крайней точке
             solution = vec
+            print("Лучшее значение целевой функции: ", target_min)
 
     return solution
 
@@ -208,7 +209,7 @@ print_system(system, sign, goal_func, idx)
 print('---РЕШЕНИЕ ИСХОДНОЙ ЗАДАЧИ МЕТОДОМ ПЕРЕБОРА ОПОРНЫХ ВЕКТОРОВ---')
 A, b = getAb(system)
 solution = solve_brute_force(A, b, goal_func)
-print(solution)
+print('Вектор решения: ', solution)
 print('---РЕШЕНИЕ ИСХОДНОЙ ЗАДАЧИ СИМПЛЕКС-МЕТОДОМ---')
 solution = simplex(goal_func, A, b)
-print(solution)
+print('Вектор решения: ', solution)
