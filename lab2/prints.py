@@ -1,4 +1,12 @@
-
+def print_problem(supply, demand, costs):
+    print("Предложение:")
+    print(supply)
+    print("Спрос:")
+    print(demand)
+    print("Стоимость перевозок:")
+    for i in range(len(costs)):
+        print(costs[i])
+    print()
 
 def print_cycle(start_pos, cycle, bfs, len_col, len_row):
     cycle_table = [['0' for j in range(len_row)] for i in range(len_col)]
