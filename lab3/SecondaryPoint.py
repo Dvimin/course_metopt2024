@@ -10,7 +10,7 @@ class SecondaryPointSolver:
         self.func_call_count = 0
         a = self.task.a
         b = self.task.b
-        while abs(b - a) > eps:
+        while abs(b - a) >= eps:
             c = a + (b - a) / 3
             d = b - (b - a) / 3
             self.func_call_count += 2

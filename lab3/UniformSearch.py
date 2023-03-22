@@ -9,13 +9,15 @@ class UniformSearchSolver:
     def solve(self, eps):
         n = (self.task.b - self.task.a) / eps
         step = (self.task.b - self.task.a) / n
-        x_min = self.task.a
+        x, x_min = self.task.a, self.task.a
         f_min = self.task.func(x_min)
-        for i in range(1, int(n+1)):
+        i = 1
+        while x <= self.task.b:
             x = self.task.a + i * step
             f = self.task.func(x)
             if f < f_min:
                 x_min = x
                 f_min = f
+            i += 1
         return x_min
 
