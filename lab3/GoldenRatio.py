@@ -12,7 +12,7 @@ class GoldenRatioSolver:
         c = self.task.b - (self.task.b - self.task.a) / self.phi
         d = self.task.a + (self.task.b - self.task.a) / self.phi
         while abs(c - d) >= eps:
-            if self.task.func(c) < self.task.func(d):
+            if self.task.func(c) >= self.task.func(d):
                 self.task.b = d
             else:
                 self.task.a = c

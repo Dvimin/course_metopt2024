@@ -14,7 +14,7 @@ class SecondaryPointSolver:
             c = a + (b - a) / 3
             d = b - (b - a) / 3
             self.func_call_count += 2
-            if self.task.func(c) < self.task.func(d):
+            if self.task.func(c) >= self.task.func(d):
                 b = d
             else:
                 a = c
