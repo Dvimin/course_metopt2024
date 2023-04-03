@@ -66,9 +66,6 @@ def accuracy():
         task = t.Task()
         sps = SecondaryPointSolver(task)
         s.append(fabs(uss.solve(eps) - task.x_max))
-    print(u)
-    print(g)
-    print(s)
     eps = [0.1, 0.01, 0.001]
     fig, ax = plt.subplots()
     ax.plot(eps, g, label='Метод золотого сечения', linestyle='--')
@@ -80,6 +77,6 @@ def accuracy():
     plt.show()
 
 
+func_call_count()
 accuracy()
-#func_call_count()
-#unimodal()
+unimodal()

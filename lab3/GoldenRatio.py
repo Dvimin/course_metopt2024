@@ -8,16 +8,26 @@ class GoldenRatioSolver:
         self.phi = (1 + 5 ** 0.5) / 2
 
     def solve(self, eps):
-        self.func_call_count = 0
-        c = self.task.b - (self.task.b - self.task.a) / self.phi
-        d = self.task.a + (self.task.b - self.task.a) / self.phi
-        while abs(c - d) >= eps:
-            if self.task.func(c) >= self.task.func(d):
-                self.task.b = d
+        self.func_call_count = 2
+        alpha = (3 - 5 ** 0.5)/2
+        x_2 = self.task.b - alpha * (self.task.b - self.task.a)
+        x_1 = self.task.a + alpha * (self.task.b - self.task.a)
+        fx_1 = self.task.func(x_1)
+        fx_2 = self.task.func(x_2)
+        while abs(self.task.a - self.task.b) > eps:
+            if fx_1 < fx_2:
+                self.task.b = x_2
+                x_2 = x_1
+                fx_2 = fx_1
+                x_1 = self.task.a + alpha * (self.task.b - self.task.a)
+                self.func_call_count += 1
+                fx_1 = self.task.func(x_1)
             else:
-                self.task.a = c
-            self.func_call_count += 2
-            c = self.task.b - (self.task.b - self.task.a) / self.phi
-            d = self.task.a + (self.task.b - self.task.a) / self.phi
-        return (self.task.a + self.task.b) / 2.0
+                self.task.a = x_1
+                x_1 = x_2
+                fx_1 = fx_2
+                x_2 = self.task.b - alpha * (self.task.b - self.task.a)
+                self.func_call_count += 1
+                fx_2 = self.task.func(x_2)
+        return (self.task.a + self.task.b) / 2
 
