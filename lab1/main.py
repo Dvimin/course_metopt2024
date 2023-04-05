@@ -1,26 +1,8 @@
-"""
-Первая лабораторная работа: реализация программы, решающая задачи линенйного программирования. Технические задания:
-
-Реализовать алгоритмы решения прямой и двойственной задач линейного программирования методами перебора опорных векторов и табличных симплекс-методом;
-Предусмотреть автоперевод вводимой задачи линейного программирования в каноническую форму и двойственную задачу линейного программирования;
-Предусмотреть защиту от зацикливания в алгоритме симплекс-метода (правило Бленда);
-(в рамках курса) Вывести комментарий, поясняющий соответствие алгоритмов табличного симплекс-метода с тем, который изучали на лекциях.
-В качестве задачи для проверки выбрать следующую задачу линейного программирования:
-
-задача должна содержать 6 переменных неизвестных;
-задача должна содержать 6 ограничений: 3 ограничения со знаком '=', 2 - c '>=', а 1 - с знаком '<=';
-3 переменных имеют ограничение на знак;
-целевую функцию можно как минимизировать, так и максимизировать.
-"""
-
-# стандартная форма - ИЩЕМ МИНИМУМ
-
-
 import copy # для создания глубоких копий списков
+import numpy as np
 from itertools import combinations # возвращает итератор со всеми возможными комбинациями элементов входной последовательности iterable.
                                    # Каждая комбинация заключена в кортеж с длинной r элементов, в которой нет повторяющихся элементов.
-import numpy as np
-EPS = 0.00000000001
+from simplex import simplex
 
 """
 Чтение файла. Сохраняем систему.
@@ -64,19 +46,19 @@ def to_canonical(system, sign, goal_func, idx):
     # приводим к канонической форме
     # сначала заменяем все знаки на равенства
     for i in range(len(copy_system)):
-        if copy_sign[i] == '<=':
+        if copy_sign[i] == '<=': # если знак <=
             for j in range(len(copy_system)):
                 if j == i:
-                    copy_system[j].insert(-1, 1.0)
-                    copy_idx.append(len(copy_system[j]) - 2)
+                    copy_system[j].insert(-1, 1.0) # добавляем новую переменную со коэф-том 1
+                    copy_idx.append(len(copy_system[j]) - 2) # у переменной ограничение на знак
                 else:
                     copy_system[j].insert(-1, 0.0)
             copy_goal_func.append(0.0)
-            copy_sign[i] = '='
-        if copy_sign[i] == '>=':
+            copy_sign[i] = '=' # делаем равенство
+        if copy_sign[i] == '>=': # если знак >=
             for j in range(len(copy_system)):
                 if j == i:
-                    copy_system[j].insert(-1, -1.0)
+                    copy_system[j].insert(-1, -1.0) # добавляем новую переменную со коэф-том -1
                     copy_idx.append(len(copy_system[j]) - 2)
                 else:
                     copy_system[j].insert(-1, 0.0)
@@ -84,11 +66,11 @@ def to_canonical(system, sign, goal_func, idx):
             copy_sign[i] = '='
     # теперь переменные без ограничения на знак заменяем новыми
     # в том числе в ф-ии цели
-    to_delete = []
+    to_delete = [] # здесь будем хранить индексы "старых" переменных
     for i in range(len(copy_system[0]) - 1):
         if i not in copy_idx:
             # значит на знак нет ограничения
-            for j in range(len(copy_system)):  # заменяем переменную без ограничения на u-v
+            for j in range(len(copy_system)):  # заменяем переменную без ограничения на u-v (разницу двух новых переменных)
                 copy_system[j].insert(-1, copy_system[j][i])
                 copy_system[j].insert(-1, -copy_system[j][i])
             copy_goal_func.insert(-1, copy_goal_func[i])
@@ -116,10 +98,10 @@ def direct_to_dual(system, sign, goal_func, idx):
     dual_system.pop(-1)
     for i in range(len(dual_system)):
         dual_system[i].append(goal_func[i]) # добавляем свободные члены
-        if i in idx: # и смотрим знаки новой системы
-            dual_sign.append('<=')
+        if i in idx: # и смотрим знаки новой системы: если на i было ограничение
+            dual_sign.append('<=')  # то знак <=
         else:
-            dual_sign.append('=')
+            dual_sign.append('=') # иначе =
         if sign[i] == '>=':
             dual_idx.append(i)
         if sign[i] == '<=':
@@ -127,8 +109,10 @@ def direct_to_dual(system, sign, goal_func, idx):
     return dual_system, dual_sign, dual_func, dual_idx
 
 
-""" МЕТОД ПЕРЕБОРА КРАЙНИХ ТОЧЕК """
-def get_basis_mtrxs(A : np.ndarray):
+EPS = 0.000000001
+
+
+def get_basis_matrs(A : np.ndarray):
     N = A.shape[0]
     M = A.shape[1]
 
@@ -139,23 +123,25 @@ def get_basis_mtrxs(A : np.ndarray):
     for i in combinations(all_indexes, N):
         basis_matr = A[:, i]
         if np.linalg.det(basis_matr) != 0: # проверяем, что определитель отличен от нуля
-            basis_matrs.append(basis_matr) # получаем все такие матрицы и их индексы
+            basis_matrs.append(basis_matr) # получаем все такие матрицы и индексы комбинаций записываем
             basis_combinations_indexes.append(i)
+
+    print("Количество базисных матриц: ", len(basis_matrs))
 
     return basis_matrs, basis_combinations_indexes
 
 
-def get_vectors(A : list, b : list):
+def get_all_possible_vectors(A : list, b : list):
     N = len(A[0])
     M = len(A)
     vectors = []
 
-    if M >= N:  # Рассматривается матрица A[M,N}, где число строк меньше числа столбцов (M < N)
+    if M >= N: # Рассматривается матрица A[M,N}, где число строк меньше числа столбцов (M < N)
         return vectors
     else:
-        basis_matrs, basis_combinations_indexes = get_basis_mtrxs(np.array(A))
+        basis_matrs, basis_combinations_indexes = get_basis_matrs(np.array(A))
 
-    for i in range(len(basis_matrs)):  # Для всех матриц с ненулевым определителем
+    for i in range(len(basis_matrs)): # Для всех матриц с ненулевым определителем
         solve = np.linalg.solve(basis_matrs[i], b) # Решаем систему вида A[M,N_k]*x[N]=b[M]
         if (len(solve[solve < -1 * EPS]) != 0) or (len(solve[solve > 1e+15]) != 0):
             continue
@@ -167,18 +153,19 @@ def get_vectors(A : list, b : list):
     return vectors
 
 
-def brute_force(A : list, b : list, c : list):
-    vectors = get_vectors(A, b)  # получаем все возможные опорные вектора
-    if len(vectors) == 0:  # если их нет, нет оптимального решения
+def solve_brute_force(A : list, b : list, c : list):
+    vectors = get_all_possible_vectors(A, b) # получаем все возможные опорные вектора
+    if len(vectors) == 0: # если их нет, нет оптимального решения
         return []
 
     solution = vectors[0]
-    goal_min = np.dot(solution, c)  # значение фонкции цели в крайней точке
+    target_min = np.dot(solution, c)
 
-    for vec in vectors: # находим минимум
-        if np.dot(vec, c) < goal_min:
-            goal_min = np.dot(vec, c)
+    for vec in vectors:
+        if np.dot(vec, c) < target_min: # находим минимум
+            target_min = np.dot(vec, c) # значение функции цели в крайней точке
             solution = vec
+            print("Лучшее значение целевой функции: ", target_min)
 
     return solution
 
@@ -194,24 +181,20 @@ def getAb(system):
 
 def print_system(system, sign, goal_func, idx):
     A, b = getAb(system)
-    print('A:')
     for i in range(len(A)):
         for j in range(len(A[i])):
+            if (A[i][j] == 0):
+                continue
             print(A[i][j], '*x[',j, ']', end='', sep='')
-            if (j != len(A[i]) - 1):
+            if j != len(A[i]) - 1:
                 print(' + ', end='')
-        print(' ', sign[i], ' ', b[i])
+        print(' ', sign[i], b[i], sep=' ')
     print('Целевая функция: ', goal_func)
     print('Индексы переменных с ограничением на знак: ', idx)
     print('\n')
 
 
-
-
-
-
-
-system, sign, goal_func, idx = read_file("task.txt")
+system, sign, goal_func, idx = read_file("task1.txt")
 print('---ИСХОДНАЯ ЗАДАЧА---')
 print_system(system, sign, goal_func, idx)
 
@@ -219,29 +202,14 @@ print('---ДВОЙСТВЕННАЯ ЗАДАЧА---')
 system1, sign1, goal_func1, idx1 = direct_to_dual(system, sign, goal_func, idx)
 print_system(system1, sign1, goal_func1, idx1)
 
-print('---КАНОНИЧЕСКАЯ ФОРМА ИСХОДНОЙ ЗАДАЧИ---')
-system2, sign2, goal_func2, idx2 = to_canonical(system, sign, goal_func, idx)
-print_system(system2, sign2, goal_func2, idx2)
-
-print('---КАНОНИЧЕСКАЯ ФОРМА ДВОЙСТВЕННОЙ ЗАДАЧИ---')
-system3, sign3, goal_func3, idx3 = to_canonical(system1, sign1, goal_func1, idx1)
-print_system(system3, sign3, goal_func3, idx3)
+print('---КАНОНИЧЕСКАЯ ФОРМА---')
+system, sign, goal_func, idx = to_canonical(system, sign, goal_func, idx)
+print_system(system, sign, goal_func, idx)
 
 print('---РЕШЕНИЕ ИСХОДНОЙ ЗАДАЧИ МЕТОДОМ ПЕРЕБОРА ОПОРНЫХ ВЕКТОРОВ---')
-A, b = getAb(system2)
-solution = brute_force(A, b, goal_func2)
-print(solution)
-print('\n')
-
-print('---РЕШЕНИЕ ДВОЙСТВЕННОЙ ЗАДАЧИ МЕТОДОМ ПЕРЕБОРА ОПОРНЫХ ВЕКТОРОВ---')
-A, b = getAb(system3)
-solution = brute_force(A, b, goal_func3)
-print(solution)
-print('\n')
-
+A, b = getAb(system)
+solution = solve_brute_force(A, b, goal_func)
+print('Вектор решения: ', solution)
 print('---РЕШЕНИЕ ИСХОДНОЙ ЗАДАЧИ СИМПЛЕКС-МЕТОДОМ---')
-
-print('---РЕШЕНИЕ ДВОЙСТВЕННОЙ ЗАДАЧИ СИМПЛЕКС-МЕТОДОМ---')
-
-
-
+solution = simplex(goal_func, A, b)
+print('Вектор решения: ', solution)
