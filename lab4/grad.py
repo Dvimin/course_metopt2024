@@ -11,10 +11,9 @@ def gradsolve(x_init, eps):
     x_k = x_init
     k = 0
     grad = t.gradf(x_k)
-    a_k = 0.95
     while norm(grad) > eps:
+        a_k = p.secondary_point(x_k, eps)
         x_k = x_k - a_k * grad
-        a_k = p.golden_ratio(x_k, eps)
         grad = t.gradf(x_k)
         k += 1
-    return x_k
+    return x_k, k

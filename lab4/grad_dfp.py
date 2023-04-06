@@ -1,28 +1,41 @@
 import numpy as np
 
-import task
+import task as t
+import pivoter as p
 
-class gdfp:
-    t = task.Task()
+def norm(x):
+    return np.sqrt(x[0] ** 2 + x[1] ** 2)
 
-    def refresh_matrix(self, A):
-        dx = self.x[-1] - self.x[-2]
-        dw = grad_f(self.x[-2]) - grad_f(self.x[-1])
-        return A - np.outer(dx, dx) / np.dot(dw, dx) - A.dot(np.outer(dw, dw)).dot(A.transpose()) / (
-            np.dot(dw, A.dot(dw)))
+def refresh_matrix(A, x_0, x_1):
+    dx = x_1 - x_0
+    dw = t.gradf(x_0) - t.gradf(x_1)
+    return A - np.outer(dx, dx) / np.dot(dw, dx) - A.dot(np.outer(dw, dw)).dot(A.transpose()) / (
+        np.dot(dw, A.dot(dw)))
 
-    def solve(self, x_0, eps):
-        self.x = [np.asarray(x_0)]
-        self.iters = 0
-        fib_nums = fib(self.fib_iter_num)
-        grad = None
-        A = np.eye(2)
-        while norm(grad) >= eps:
-            grad = grad_f(self.x[-1])
-            p = A.dot(grad)
-            alpha = fib_min(fib_nums, self.x[-1], p)
-            self.x.append(self.x[-1] - alpha * p)
-            self.iters += 1
-            if self.iters % 2 == 0:
-                A = self.refresh_matrix(A)
-        return self.x[-1]
+
+def gradsolve(x_init, eps):
+    x_k = x_init
+    k = 0
+    grad = t.gradf(x_k)
+    while norm(grad) > eps:
+        a_k = p.secondary_point(x_k, eps)
+        x_k = x_k - a_k * grad
+        grad = t.gradf(x_k)
+        k += 1
+    return x_k, k
+
+def solve(x_init, eps):
+    x_0 = x_init
+    x_k = x_init
+    k = 0
+    grad = t.gradf(x_0)
+    A = np.eye(2)
+    while norm(grad) >= eps:
+        po = A.dot(grad)
+        alpha = p.secondary_point(x_0, -po)
+        x_0 = x_k
+        x_k = x_k - alpha * po
+        k += 1
+        if k % 2 == 0:
+            A = refresh_matrix(A, x_0, x_k)
+    return x_k

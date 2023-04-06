@@ -1,5 +1,5 @@
-import task as t
 
+import task as t
 
 def golden_ratio(x_k, eps):
     a = 0
