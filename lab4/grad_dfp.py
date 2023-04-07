@@ -2,6 +2,7 @@ import numpy as np
 
 import task as t
 import pivoter as p
+import ort_checker as ort
 
 def norm(x):
     return np.sqrt(x[0] ** 2 + x[1] ** 2)
@@ -37,4 +38,6 @@ def solve(x_init, eps):
         k += 1
         if k % 2 == 0:
             A = refresh_matrix(A, x_0, x_k)
+
+
     return x, y, x_k, k
