@@ -2,10 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
+import grad
+import grad_dfp
+
 
 def make_data():
-    x, y = np.meshgrid(np.arange(0, 10, 0.05), np.arange(0, 10, 0.05))
-    z = 5 * x + y + 4 * np.sqrt(1 + x ** 2 + 3 * y ** 2)
+    x, y = np.meshgrid(np.arange(-0.4, 0, 0.01), np.arange(-0.3, 0.1, 0.01))
+    z = 4 * x + y + 4 * np.sqrt(1 + 3*x ** 2 + y ** 2)
     return x, y, z
 
 
@@ -29,6 +32,11 @@ def plot_lines(points_x=None, points_y=None):
 
 
 if __name__ == '__main__':
-    #surface()
-    plot_lines([0.0, 3.0, 2.0, 4], [0.0, 2.1, 3.5, 6])
+    x, y, solution, iters = grad.solve(np.array([0, 0]), 0.0001)
 
+    #print(grad_dfp.solve(np.array([0, 0]), 0.001))
+    plot_lines(x, y)
+    x, y, solution, iters = grad_dfp.solve(np.array([0, 0]), 0.0001)
+
+    #print(grad_dfp.solve(np.array([0, 0]), 0.001))
+    plot_lines(x, y)
