@@ -1,5 +1,5 @@
-
 import task as t
+
 
 def golden_ratio(x_k, grad, eps):
     a = 0

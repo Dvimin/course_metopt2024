@@ -15,7 +15,7 @@ class GoldenRatioSolver:
         fx_1 = self.task.func(x_1)
         fx_2 = self.task.func(x_2)
         while abs(self.task.a - self.task.b) > eps:
-            if fx_1 < fx_2:
+            if fx_1 > fx_2:
                 self.task.b = x_2
                 x_2 = x_1
                 fx_2 = fx_1

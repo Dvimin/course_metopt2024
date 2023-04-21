@@ -3,8 +3,10 @@ import numpy as np
 #if k > 2:
 #    (ort.is_orthogonal(np.asarray([x[-3], y[-3]]), np.asarray([x[-2], y[-2]]), np.asarray([x[-1], y[-1]])))
 
+
 def norm(x):
     return np.sqrt(x[0] ** 2 + x[1] ** 2)
+
 
 def is_orthogonal(x_1, x_2, x_3):
     dx1 = x_2 - x_1
