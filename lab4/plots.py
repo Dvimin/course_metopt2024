@@ -29,6 +29,8 @@ def plot_lines(points_x=None, points_y=None):
     plt.ylabel("x2")
     plt.title("Линии уровня функции")
     plt.plot(points_x, points_y, 'bX--')
+    x_min, y_min = -4 / np.sqrt(87), -np.sqrt(3 / 29)
+    plt.plot(x_min, y_min, 'r*')
     plt.show()
 
 
